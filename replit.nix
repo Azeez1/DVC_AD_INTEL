@@ -26,7 +26,7 @@
     pkgs.nodejs
     pkgs.xorg.libXcomposite
     pkgs.xorg.libXdamage
-    pkgs.xorg.libxfixes
+    pkgs.xorg.libXfixes
     pkgs.xorg.libxcb
     pkgs.at-spi2-atk
   ];
