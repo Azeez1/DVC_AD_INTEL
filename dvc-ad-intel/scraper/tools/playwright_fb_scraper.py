@@ -11,7 +11,10 @@ async def scrape_facebook_ads():
     """
     results = []
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True, args=['--no-sandbox'])
+        browser = await p.chromium.launch(
+            headless=True,
+            args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+        )
         page = await browser.new_page()
 
         # Navigate to Facebook Ads Library with a sample query.
