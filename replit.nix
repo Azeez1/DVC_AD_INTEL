@@ -7,7 +7,7 @@
     pkgs.firefox
     pkgs.xorg.libX11
     pkgs.libxkbcommon
-    pkgs.libgbm
+    pkgs.mesa.drivers
     pkgs.libdrm
     pkgs.xorg.libxshmfence
     pkgs.mesa
