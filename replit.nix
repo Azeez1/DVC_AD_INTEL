@@ -24,5 +24,10 @@
     pkgs.alsa-lib
     pkgs.python39Full
     pkgs.nodejs
+    pkgs.xorg.libxcomposite
+    pkgs.xorg.libxdamage
+    pkgs.xorg.libxfixes
+    pkgs.xorg.libxcb
+    pkgs.at-spi2-atk
   ];
 }
