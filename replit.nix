@@ -22,5 +22,7 @@
     pkgs.cups
     pkgs.expat
     pkgs.alsa-lib
+    pkgs.python39Full
+    pkgs.nodejs
   ];
 }
