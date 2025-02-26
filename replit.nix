@@ -25,7 +25,7 @@
     pkgs.python39Full
     pkgs.nodejs
     pkgs.xorg.libXcomposite
-    pkgs.xorg.libxdamage
+    pkgs.xorg.libXdamage
     pkgs.xorg.libxfixes
     pkgs.xorg.libxcb
     pkgs.at-spi2-atk
