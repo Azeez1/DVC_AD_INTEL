@@ -1,52 +1,51 @@
-# scraper/tools/playwright_fb_scraper.py
-
 import asyncio
 from playwright.async_api import async_playwright
 
+# Asynchronously scrape Facebook Ads Library for a given search query.
+async def scrape_facebook_ads(search_query: str):
+    results = []  # List to store the scraped ad texts
 
-async def scrape_facebook_ads():
-    """
-    Scrapes a sample Facebook Ads Library page for ad data.
-    Adjust the URL or selectors as needed for your target ads.
-    """
-    results = []
+    # Construct the URL using the provided search query.
+    # The URL includes parameters to filter active ads, all ad types, US country, etc.
+    url = (
+        "https://www.facebook.com/ads/library/"
+        f"?active_status=active&ad_type=all&country=US&is_targeted_country=false"
+        f"&media_type=all&q={search_query}&search_type=keyword_unordered"
+    )
+
+    # Initialize Playwright in an asynchronous context.
     async with async_playwright() as p:
-        browser = await p.chromium.launch(
-            headless=True,
-            args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-        )
+        # Launch Chromium in headless mode (no UI).
+        browser = await p.chromium.launch(headless=True)
+        # Create a new page (browser tab).
         page = await browser.new_page()
-
-        # Navigate to Facebook Ads Library with a sample query.
-        # You can change the 'q' parameter to target specific brands or keywords.
-        url = "https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=US&q=example"
+        # Navigate to the constructed URL with a 60-second timeout.
         await page.goto(url, timeout=60000)
-
-        # Wait for ad elements to load; adjust the selector if needed.
-        await page.wait_for_selector("div[role='article']", timeout=60000)
-
-        # Query all ad containers
-        ad_elements = await page.query_selector_all("div[role='article']")
-
+        # Wait for the ad elements to appear on the page using the updated selector.
+        await page.wait_for_selector('div[data-testid="ad"]', timeout=60000)
+        # Query all elements that match the selector (each representing an ad).
+        ad_elements = await page.query_selector_all('div[data-testid="ad"]')
+        # Loop through each found ad element.
         for elem in ad_elements:
-            try:
-                # Extract text content from each ad element
-                ad_text = await elem.inner_text()
-                results.append(ad_text)
-            except Exception as e:
-                print(f"Error extracting ad info: {e}")
-
+            # Extract the inner text from the ad element.
+            text = await elem.inner_text()
+            # Append the extracted text to the results list.
+            results.append(text)
+        # Close the browser to free up resources.
         await browser.close()
+    # Return the list of scraped ad texts.
     return results
 
-
-def run_facebook_scraper():
-    """Wrapper to run the async Facebook scraper synchronously."""
-    return asyncio.run(scrape_facebook_ads())
-
+# Synchronous wrapper to run the asynchronous scraping function.
+def run_facebook_scraper(search_query: str):
+    return asyncio.run(scrape_facebook_ads(search_query))
 
 if __name__ == "__main__":
-    ads_data = run_facebook_scraper()
+    # For testing purposes, we use 'shapewear' as the search query.
+    # In production, this value can be dynamically provided from your frontend.
+    ads_data = run_facebook_scraper("shapewear")
+
+    # Print out the scraped Facebook Ads.
     print("Scraped Facebook Ads:")
     for ad in ads_data:
         print(ad)
