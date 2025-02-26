@@ -1,4 +1,4 @@
 
 language = "docker"
-run = "python scraper/tools/playwright_fb_scraper.py"
+run = "python dvc-ad-intel/scraper/tools/playwright_fb_scraper.py"
 modules = ["python-3.11"]
