@@ -1,7 +1,8 @@
-run = "I am here "
+language = "docker"
+run = "python scraper/tools/playwright_fb_scraper.py"
 modules = ["python-3.11"]
-[nix]
-channel = "stable-24_05"
-
-[deployment]
-run = ["sh", "-c", "I am here "]
+# modules = ["python-3.11"]  <-- Not needed when using Docker
+# [nix]
+# channel = "stable-24_05"
+# [deployment]
+# run = ["sh", "-c", "python scraper/tools/playwright_fb_scraper.py"]
