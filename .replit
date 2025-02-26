@@ -1,0 +1,6 @@
+run = "I am here "
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+run = ["sh", "-c", "I am here "]
