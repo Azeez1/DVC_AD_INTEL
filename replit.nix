@@ -29,5 +29,6 @@
     pkgs.xorg.libXfixes
     pkgs.xorg.libxcb
     pkgs.at-spi2-atk
+    pkgs.systemd
   ];
 }
