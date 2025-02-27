@@ -1,86 +1,71 @@
 import asyncio
 from playwright.async_api import async_playwright
 
-
 # Asynchronously scrape Facebook Ads Library for a given search query.
 async def scrape_facebook_ads(search_query: str):
-    results = [
-    ]  # This will hold dictionaries for each ad with our extracted fields.
+    results = []  # List to store a dictionary of extracted fields per ad
 
     # Construct the URL using the provided search query.
     url = (
         "https://www.facebook.com/ads/library/"
         f"?active_status=active&ad_type=all&country=US&is_targeted_country=false"
-        f"&media_type=all&q={search_query}&search_type=keyword_unordered")
+        f"&media_type=all&q={search_query}&search_type=keyword_unordered"
+    )
 
     async with async_playwright() as p:
         # Launch Chromium in headless mode.
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
+        # Navigate to the URL with a 60-second timeout.
         await page.goto(url, timeout=60000)
 
-        # Scroll several times to load dynamic content.
+        # Scroll multiple times to load dynamic content.
         for _ in range(5):
-            await page.evaluate(
-                "window.scrollTo(0, document.body.scrollHeight)")
+            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
             await asyncio.sleep(2)
 
-        # Select all ad containers using the confirmed class.
+        # Select all ad containers using the confirmed container class "xh8yej3".
         ad_elements = await page.query_selector_all('div.xh8yej3')
 
-        # Process each ad element.
+        # Process each ad element, limiting results to 10.
         for elem in ad_elements:
+            # Limit output to 10 ads for testing.
+            if len(results) >= 10:
+                break
+
             ad_data = {}
 
-            # Extract video link if a <video> element exists.
-            video_elem = await elem.query_selector("video")
-            if video_elem:
-                ad_data["video"] = await video_elem.get_attribute("src")
-            else:
-                ad_data["video"] = None
+            # Extract Brand Name from a <div> with classes _8nsi _8nqp _a25w.
+            brand_elem = await elem.query_selector("div._8nsi._8nqp._a25w")
+            ad_data["brand"] = await brand_elem.inner_text() if brand_elem else None
 
-            # Extract brand name from an <a> element.
-            # (Adjust the selector if needed; here we assume the brand name is in an <a> with class "xt0psk2")
-            brand_elem = await elem.query_selector("a.xt0psk2")
-            if brand_elem:
-                ad_data["brand"] = await brand_elem.inner_text()
-            else:
-                ad_data["brand"] = None
+            # Extract Ad Copy from a <div> with classes _7jyr _a25.
+            ad_copy_elem = await elem.query_selector("div._7jyr._a25")
+            ad_data["ad_copy"] = await ad_copy_elem.inner_text() if ad_copy_elem else None
 
-            # Extract ad copy.
-            # Here we try to extract text from a <div> that might contain the main ad description.
-            # You may need to refine this selector based on the page's structure.
-            ad_copy_elem = await elem.query_selector("div.x6s0dn4")
-            if ad_copy_elem:
-                ad_data["ad_copy"] = await ad_copy_elem.inner_text()
-            else:
-                # Fallback: get all text of the element.
-                ad_data["ad_copy"] = await elem.inner_text()
+            # Extract CTA from a <div> with class x2lah0s.
+            cta_elem = await elem.query_selector("div.x2lah0s")
+            ad_data["cta"] = await cta_elem.inner_text() if cta_elem else None
 
-            # Extract the CTA (Call To Action) text.
-            # We use a text selector to find an element containing "Shop now".
-            cta_elem = await elem.query_selector("text=Shop now")
-            if cta_elem:
-                ad_data["cta"] = await cta_elem.inner_text()
-            else:
-                ad_data["cta"] = None
+            # Extract Video Link from a <video> element with classes x1lliihq x5yr21d xh8yej3.
+            video_elem = await elem.query_selector("video.x1lliihq.x5yr21d.xh8yej3")
+            ad_data["video"] = await video_elem.get_attribute("src") if video_elem else None
 
             results.append(ad_data)
 
+        # Close the browser.
         await browser.close()
     return results
-
 
 # Synchronous wrapper to run the asynchronous function.
 def run_facebook_scraper(search_query: str):
     return asyncio.run(scrape_facebook_ads(search_query))
 
-
 if __name__ == "__main__":
-    # Test with 'shapewear' as the search query.
+    # For testing purposes, we use 'shapewear' as the search query.
     ads_data = run_facebook_scraper("shapewear")
 
-    # Print the extracted data for each ad.
+    # Print the extracted fields for each ad.
     print("Scraped Facebook Ads:")
     for ad in ads_data:
         print("Video Link:", ad["video"])
