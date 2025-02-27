@@ -60,4 +60,4 @@ if __name__ == "__main__":
     print("Scraped Facebook Ads:")
     for ad in ads_data[:5]:
         print(ad)
-        print("---------------------")
+        print("----------------------")
