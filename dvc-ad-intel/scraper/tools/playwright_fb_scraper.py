@@ -24,6 +24,7 @@ async def scrape_facebook_ads(search_query: str):
         await page.goto(url, timeout=60000)
 
         # Scroll the page several times to load dynamic content.
+        # Dynamic pages may load new elements as you scroll.
         for _ in range(5):  # Adjust the number of scrolls if needed.
             # Scroll to the bottom of the page.
             await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
@@ -54,10 +55,10 @@ def run_facebook_scraper(search_query: str):
 
 if __name__ == "__main__":
     # For testing purposes, the search query is hardcoded to 'shapewear'.
+    # In a production setup, this value should come from your frontend.
     ads_data = run_facebook_scraper("shapewear")
 
-    # Print the results to the console, limiting to the first 5 ads.
+    # Print the results to the console.
     print("Scraped Facebook Ads:")
-    for ad in ads_data[:5]:
+    for ad in ads_data:
         print(ad)
-        print("----------------------")
