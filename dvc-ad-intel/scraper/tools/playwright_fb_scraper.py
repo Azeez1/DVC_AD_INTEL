@@ -3,72 +3,62 @@ from playwright.async_api import async_playwright
 
 # Asynchronously scrape Facebook Ads Library for a given search query.
 async def scrape_facebook_ads(search_query: str):
-    results = []  # List to store extracted ad data for each ad.
+    results = []  # List to store the scraped ad texts
 
-    # Construct the URL with the provided search query.
+    # Construct the URL using the provided search query.
+    # This URL includes parameters to filter active ads, all ad types,
+    # ads from the US, all media types, and uses the search term.
     url = (
         "https://www.facebook.com/ads/library/"
         f"?active_status=active&ad_type=all&country=US&is_targeted_country=false"
         f"&media_type=all&q={search_query}&search_type=keyword_unordered"
     )
 
+    # Start Playwright in an asynchronous context.
     async with async_playwright() as p:
-        # Launch Chromium in headless mode.
+        # Launch Chromium in headless mode (no graphical interface).
         browser = await p.chromium.launch(headless=True)
+        # Open a new page (i.e., a new browser tab).
         page = await browser.new_page()
-        # Navigate to the URL with a 60-second timeout.
+        # Navigate to the constructed URL with a 60-second timeout.
         await page.goto(url, timeout=60000)
 
-        # Increase scroll iterations and pause duration to allow lazy-loading.
-        for _ in range(10):  # Increase from 5 to 10 scrolls.
+        # Scroll the page several times to load dynamic content.
+        # Dynamic pages may load new elements as you scroll.
+        for _ in range(5):  # Adjust the number of scrolls if needed.
+            # Scroll to the bottom of the page.
             await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            await asyncio.sleep(3)  # Increase sleep time from 2 to 3 seconds.
+            # Wait 2 seconds for new content to load.
+            await asyncio.sleep(2)
 
-        # Select all ad containers using the generic container class.
+        # Use the confirmed selector to select all ad containers.
+        # "div.xh8yej3" selects all <div> elements with the class "xh8yej3"
         ad_elements = await page.query_selector_all('div.xh8yej3')
 
-        # Process each ad element; limit output to 5 ads.
+        # Loop through each ad element found.
         for elem in ad_elements:
-            if len(results) >= 5:
-                break
+            # Extract the inner text from the ad element.
+            text = await elem.inner_text()
+            # Append the extracted text to the results list.
+            results.append(text)
 
-            ad_data = {}
-
-            # Extract Brand Name using the provided selector.
-            brand_elem = await elem.query_selector("a.xt0psk2.x1hl2dhg.xt0b8zv.x8t9es0.x1fvot60.xxio538.xjnfcd9.xq9mrsl.x1yc453h.x1h4wwuj.x1fcty0u")
-            ad_data["brand"] = await brand_elem.inner_text() if brand_elem else None
-
-            # Extract Ad Copy using the provided selector.
-            ad_copy_elem = await elem.query_selector("div._7jyr._a25-")
-            ad_data["ad_copy"] = await ad_copy_elem.inner_text() if ad_copy_elem else None
-
-            # Extract CTA using the provided selector.
-            cta_elem = await elem.query_selector("div.x8t9es0.x1fvot60.xxio538.x1heor9g.xuxw1ft.x6ikm8r.x10wlt62.xlyipyv.x1h4wwuj.x1pd3egz.xeuugli")
-            ad_data["cta"] = await cta_elem.inner_text() if cta_elem else None
-
-            # Extract Video Link using the provided selector.
-            video_elem = await elem.query_selector("video.x1lliihq.x5yr21d.xh8yej3")
-            ad_data["video"] = await video_elem.get_attribute("src") if video_elem else None
-
-            results.append(ad_data)
-
-        # Close the browser.
+        # Close the browser to free up resources.
         await browser.close()
+
+    # Return the list of scraped ad texts.
     return results
 
 # Synchronous wrapper to run the asynchronous scraping function.
 def run_facebook_scraper(search_query: str):
+    # asyncio.run will execute the asynchronous function and return its result.
     return asyncio.run(scrape_facebook_ads(search_query))
 
 if __name__ == "__main__":
-    # For testing, use 'shapewear' as the search query.
+    # For testing purposes, the search query is hardcoded to 'shapewear'.
+    # In a production setup, this value should come from your frontend.
     ads_data = run_facebook_scraper("shapewear")
 
-    # Print out the extracted details for each ad.
+    # Print the results to the console.
     print("Scraped Facebook Ads:")
     for ad in ads_data:
-        print("Video Link:", ad["video"])
-        print("Brand Name:", ad["brand"])
-        print("Ad Copy:", ad["ad_copy"])
-        print("CTA:", ad["cta"])
-        print("---------------------")
+        print(ad)
