@@ -10,7 +10,7 @@ async def scrape_facebook_ads(search_query: str):
 
     async with async_playwright() as p:
         # Launch with headless=False to see what's happening during development
-        browser = await p.chromium.launch(headless=False)
+        browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
 
         # Navigate and wait for content to load
