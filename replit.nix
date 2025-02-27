@@ -3,6 +3,5 @@
   deps = [
     pkgs.python3
     pkgs.chromium
-    # Add any other system packages you need here.
   ];
 }
