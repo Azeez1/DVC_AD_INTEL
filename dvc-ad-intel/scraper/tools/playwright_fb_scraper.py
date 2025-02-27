@@ -6,7 +6,7 @@ async def scrape_facebook_ads(search_query: str):
     results = []  # List to store the scraped ad texts
 
     # Construct the URL using the provided search query.
-    # This URL includes parameters to filter active ads, all ad types,
+    # This UR L includes parameters to filter active ads, all ad types,
     # ads from the US, all media types, and uses the search term.
     url = (
         "https://www.facebook.com/ads/library/"
