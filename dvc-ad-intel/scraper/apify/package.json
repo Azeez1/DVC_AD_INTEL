@@ -1,0 +1,8 @@
+{
+  "name": "facebook-ads-actor",
+  "version": "1.0.0",
+  "main": "facebook_ads_actor.js",
+  "dependencies": {
+    "apify": "^2.3.0"
+  }
+}
