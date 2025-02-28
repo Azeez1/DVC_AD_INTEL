@@ -17,11 +17,10 @@ const postData = JSON.stringify({
         }
     ],
     searchTerms: [searchQuery],
-    countryCode: "US", 
+    countryCode: "US",
     adActiveStatus: "active",
     adType: "all"
 });
-
 
 // Request options for the API call
 const options = {
@@ -63,20 +62,33 @@ const req = https.request(options, (res) => {
                 return;
             }
 
-            // Limit the results to the specified count
+            // Limit the final results to the specified count
             let results = jsonResponse;
+            if (!Array.isArray(jsonResponse) && !(jsonResponse.results && Array.isArray(jsonResponse.results))) {
+                // If not an array or doesn't have a results array, ensure results is empty or the correct structure
+                results = [];
+            }
+
+            // If jsonResponse is an array, use it directly; otherwise use jsonResponse.results
             if (Array.isArray(jsonResponse)) {
-                results = jsonResponse.slice(0, count);
+                results = jsonResponse;
             } else if (jsonResponse.results && Array.isArray(jsonResponse.results)) {
-                results = jsonResponse.results.slice(0, count);
+                results = jsonResponse.results;
             }
 
             // Extract the ads array
             const adsArray = Array.isArray(results) ? results : (results.results || []);
-            console.log(`Found ${adsArray.length} ads in the response`);
+
+            // Collect only up to "count" items
+            const limitedAds = [];
+            for (const item of adsArray) {
+                if (limitedAds.length >= count) break;
+                limitedAds.push(item);
+            }
+            console.log(`Found ${limitedAds.length} ads in the response`);
 
             // Transform the data into key fields
-            const transformedData = adsArray.map(item => ({
+            const transformedData = limitedAds.map(item => ({
                 searchUrl: `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=US&q=${searchQuery}&search_type=keyword_exact_phrase`,
                 adUrl: item.url || '',
                 pageName: item.page_name,
@@ -94,6 +106,7 @@ const req = https.request(options, (res) => {
             console.dir(transformedData, { depth: null });
 
         } catch (e) {
+            // Not JSON or parsing error
             console.error('Error parsing response:', e);
             console.log('Raw response:', responseData);
         }
