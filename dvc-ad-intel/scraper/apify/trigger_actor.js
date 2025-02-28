@@ -12,13 +12,16 @@ const count = 20;
 // Prepare the request data with a complete, valid URL (including query parameters)
 const postData = JSON.stringify({
     urls: [
-        "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=US&q=%22shapewear%22&search_type=keyword_exact_phrase"
+        {
+            url: "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=US&q=%22shapewear%22&search_type=keyword_exact_phrase"
+        }
     ],
     searchTerms: [searchQuery],
     countryCode: "US", 
     adActiveStatus: "active",
     adType: "all"
 });
+
 
 // Request options for the API call
 const options = {
