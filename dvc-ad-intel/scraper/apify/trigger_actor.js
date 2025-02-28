@@ -1,30 +1,36 @@
+// File: trigger_actor_sync.js
+// Description: This client script triggers the actor "curious_coder/facebook-ads-library-scraper"
+// synchronously using Apify's run-sync-get-dataset-items endpoint and prints the resulting dataset items.
+
 const { ApifyClient } = require('apify-client');
 
-// 1. Initialize the ApifyClient with your API token
+// Initialize the ApifyClient with a dummy API token (replace with your real token).
 const client = new ApifyClient({
-    token: 'apify_api_Cs25DCKxbaabAfdKjGDJkMqYaprUST48hBm8', // placeholder token
+    token: 'apify_api_Cs25DCKxbaabAfdKjGDJkMqYaprUST48hBm8', // Dummy API token placeholder.
 });
 
-// 2. Prepare the actor input
+// Prepare the actor input (JSON).
 const input = {
-    urls: [
-        {
-            // The Facebook Ads Library URL for "shapewear"
-            url: "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=US&is_targeted_country=false&media_type=all&q=%22shapewear%22&search_type=keyword_exact_phrase"
-        }
-    ],
-    count: 20,  // total number of records requested
+    searchQuery: "shapewear",
+    count: 20
 };
 
 (async () => {
-    // 3. Trigger the actor with the specified input
-    //    Replace the actor ID with your exact actor ID: "curious_coder/facebook-ads-library-scraper"
-    const run = await client.actor("curious_coder/facebook-ads-library-scraper").call(input);
+    try {
+        // Trigger the actor synchronously.
+        // Using runSync options allows the call to wait until the actor run finishes.
+        const run = await client.actor("curious_coder/facebook-ads-library-scraper").call(input, {
+            runSync: true,
+            waitSecs: 300 // Wait up to 300 seconds for the run to finish.
+        });
 
-    console.log('Results from dataset:');
-    // 4. Fetch items from the dataset the actor created
-    const { items } = await client.dataset(run.defaultDatasetId).listItems();
-    items.forEach((item) => {
-        console.dir(item);
-    });
+        console.log('Dataset items from the actor run:');
+        // Retrieve dataset items from the actor's default dataset.
+        const { items } = await client.dataset(run.defaultDatasetId).listItems();
+        items.forEach(item => {
+            console.dir(item);
+        });
+    } catch (error) {
+        console.error('Error running actor synchronously:', error);
+    }
 })();
