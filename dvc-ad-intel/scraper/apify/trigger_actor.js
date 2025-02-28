@@ -1,5 +1,5 @@
-// File: trigger_actor.js
-// Description: This script triggers the Facebook Ad Library Scraper using the correct URL format
+// File: simplified_trigger.js
+// Description: Minimalistic script to try running the Facebook Ads Library scraper with URL validation
 
 const { ApifyClient } = require('apify-client');
 
@@ -8,35 +8,56 @@ const client = new ApifyClient({
     token: 'apify_api_Cs25DCKxbaabAfdKjGDJkMqYaprUST48hBm8',
 });
 
-// The input format matching exactly what's shown in the screenshot
-// Notice the URL format is different from what we were using before
+// A simpler input with just a single, properly formatted URL
+// Using the exact format from the example in the screenshot
 const input = {
-    "urls": [
-        "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=US&q=shapewear"
-    ],
-    "scrapeAdDetails": true,
-    "maxPagesPerSearch": 5,
-    "totalNumberOfRecordsRequired": 20
+    urls: [
+        "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=US&is"
+    ]
 };
+
+// Function to validate a URL
+function isValidURL(string) {
+    try {
+        new URL(string);
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
 
 (async () => {
     try {
-        // Run the actor and wait for it to finish
-        console.log('Starting actor run with the following input:');
-        console.log(JSON.stringify(input, null, 2));
+        // First, check if the URL is valid according to the URL constructor
+        const url = input.urls[0];
+        if (!isValidURL(url)) {
+            console.error(`URL validation failed for: ${url}`);
+            console.error('The URL appears to be malformed. Please check the format.');
+            return;
+        }
 
-        // Make sure we're using the correct actor ID based on the screenshot
+        console.log(`URL validation passed for: ${url}`);
+        console.log('Starting actor run with minimal input...');
+
+        // Try running with minimal input
         const run = await client.actor("curious_coder/facebook-ads-library-scraper").call(input);
 
         console.log('Actor run finished successfully.');
         console.log('Run ID:', run.id);
 
-        // Now get the dataset items from the run
+        // Get results
         const { items } = await client.dataset(run.defaultDatasetId).listItems();
+        console.log(`Retrieved ${items.length} results.`);
 
-        console.log('Dataset items from the actor run:');
-        console.dir(items, { depth: null });
     } catch (error) {
         console.error('Error running actor:', error);
+
+        // Try to extract more information from the error
+        if (error.message && error.message.includes('invalid-input')) {
+            console.error('\nThe input validation is failing. Please try using the Apify web interface directly.');
+            console.error('Copy this URL:');
+            console.error(input.urls[0]);
+            console.error('And paste it into the URLs field in the Apify web interface.');
+        }
     }
 })();
