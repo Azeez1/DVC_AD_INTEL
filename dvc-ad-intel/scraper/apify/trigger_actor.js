@@ -4,9 +4,9 @@
 
 const { ApifyClient } = require('apify-client');
 
-// Initialize the ApifyClient with your API token (dummy token used here).
+// Initialize the ApifyClient with your API token (replace the dummy token with your actual token).
 const client = new ApifyClient({
-    token: 'apify_api_Cs25DCKxbaabAfdKjGDJkMqYaprUST48hBm8', // Replace with your real token.
+    token: 'apify_api_Cs25DCKxbaabAfdKjGDJkMqYaprUST48hBm8',
 });
 
 // Prepare the actor input.
@@ -17,10 +17,10 @@ const input = {
 
 (async () => {
     try {
-        // Trigger the actor synchronously using the "sync" option.
+        // Trigger the actor synchronously by using the "sync" option.
         const run = await client.actor("curious_coder/facebook-ads-library-scraper").call(input, {
-            sync: true,
-            waitSecs: 300  // Wait up to 300 seconds for the run to finish.
+            sync: true,      // Use "sync" option, not "runSync"
+            waitSecs: 300    // Wait up to 300 seconds for the run to finish.
         });
         console.log('Dataset items from the actor run:');
         // Retrieve dataset items from the actor's default dataset.
