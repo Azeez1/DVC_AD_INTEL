@@ -1,5 +1,5 @@
 // File: trigger_actor.js
-// Description: Basic HTTPS POST request to the Apify API to call Facebook Ads Library scraper
+// Description: Basic HTTPS POST request to the Apify API with a simplified, properly formatted URL
 
 const https = require('https');
 
@@ -7,11 +7,18 @@ const https = require('https');
 const searchQuery = 'shapewear';
 const count = 20;
 
-// Prepare the request data - properly formatted input with urls field
+// Prepare the request data with a simpler URL format
+// The API appears to be very strict about URL validation
 const postData = JSON.stringify({
     urls: [
-        `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=US&q=${encodeURIComponent(searchQuery)}`
-    ]
+        // Use a simple URL without query parameters that might be causing validation issues
+        "https://www.facebook.com/ads/library"
+    ],
+    // Add additional parameters separately instead of in the URL
+    searchTerms: [searchQuery],
+    countryCode: "US", 
+    adActiveStatus: "active",
+    adType: "all"
 });
 
 // Request options for the API call
