@@ -1,4 +1,4 @@
-import { ApifyClient } from 'apify-client';
+const { ApifyClient } = require('apify-client');
 
 // 1. Initialize the ApifyClient with your API token
 const client = new ApifyClient({
