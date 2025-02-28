@@ -1,63 +1,112 @@
-// File: simplified_trigger.js
-// Description: Minimalistic script to try running the Facebook Ads Library scraper with URL validation
+// File: trigger_actor.js
+// Description: Updated script to match the approach used in the working facebook_ads_actor.js
 
 const { ApifyClient } = require('apify-client');
+const https = require('https');
 
-// Initialize the ApifyClient with your API token
+// Initialize the ApifyClient with your API token (kept for potential use)
 const client = new ApifyClient({
     token: 'apify_api_Cs25DCKxbaabAfdKjGDJkMqYaprUST48hBm8',
 });
 
-// A simpler input with just a single, properly formatted URL
-// Using the exact format from the example in the screenshot
-const input = {
-    urls: [
-        "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=US&is"
-    ]
-};
+// Use the same API URL structure that works in facebook_ads_actor.js
+const API_URL = 'https://api.apify.com/v2/acts/curious_coder~facebook-ads-library-scraper/run-sync?token=apify_api_Cs25DCKxbaabAfdKjGDJkMqYaprUST48hBm8';
 
-// Function to validate a URL
-function isValidURL(string) {
-    try {
-        new URL(string);
-        return true;
-    } catch (_) {
-        return false;
-    }
+// Prepare the actor input - notice we're using 'q' parameter directly in the URL
+const searchQuery = "shapewear";
+const count = 20;
+
+// Function to make a direct API request similar to facebook_ads_actor.js
+function fetchAdsFromApify() {
+    return new Promise((resolve, reject) => {
+        // Construct the API URL with the search query
+        const apiUrl = `${API_URL}&q=${encodeURIComponent(searchQuery)}`;
+
+        console.log(`Making API request to: ${apiUrl}`);
+
+        // Use similar request approach as facebook_ads_actor.js
+        const options = {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        };
+
+        const req = https.request(apiUrl, options, (res) => {
+            let data = '';
+
+            // Log response status
+            console.log(`Response status code: ${res.statusCode}`);
+
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+
+            res.on('end', () => {
+                try {
+                    const jsonData = JSON.parse(data);
+                    resolve(jsonData);
+                } catch (error) {
+                    console.error('Error parsing response:', error);
+                    reject(error);
+                }
+            });
+        });
+
+        req.on('error', (error) => {
+            console.error('Request error:', error);
+            reject(error);
+        });
+
+        req.end();
+    });
 }
 
+// Process the data similar to facebook_ads_actor.js
+function processResults(jsonData) {
+    // Limit the results to the specified count
+    if (Array.isArray(jsonData)) {
+        jsonData = jsonData.slice(0, count);
+    } else if (jsonData.results && Array.isArray(jsonData.results)) {
+        jsonData.results = jsonData.results.slice(0, count);
+    }
+
+    // Extract the ads array
+    const adsArray = Array.isArray(jsonData) ? jsonData : (jsonData.results || []);
+
+    console.log(`Processing ${adsArray.length} ads`);
+
+    // Transform the data into key fields (same as in facebook_ads_actor.js)
+    return adsArray.map(item => ({
+        searchUrl: apiUrl,
+        adUrl: item.url || apiUrl,
+        pageName: item.page_name,
+        pageUrl: (item.snapshot && item.snapshot.page_profile_uri) || item.page_profile_uri,
+        publishedPlatform: item.publisher_platform,
+        adTitle: item.snapshot && item.snapshot.title,
+        adCTAText: item.snapshot && item.snapshot.cta_text,
+        adCTALink: item.snapshot && item.snapshot.link_url,
+        adImages: (item.snapshot && item.snapshot.images) ? item.snapshot.images : [],
+        adVideos: (item.snapshot && item.snapshot.videos) ? item.snapshot.videos : [],
+        adText: item.snapshot && item.snapshot.body && item.snapshot.body.text
+    }));
+}
+
+// Main function
 (async () => {
     try {
-        // First, check if the URL is valid according to the URL constructor
-        const url = input.urls[0];
-        if (!isValidURL(url)) {
-            console.error(`URL validation failed for: ${url}`);
-            console.error('The URL appears to be malformed. Please check the format.');
-            return;
-        }
+        console.log(`Searching for "${searchQuery}" ads with limit ${count}...`);
 
-        console.log(`URL validation passed for: ${url}`);
-        console.log('Starting actor run with minimal input...');
+        // Fetch data using direct API approach
+        const jsonData = await fetchAdsFromApify();
 
-        // Try running with minimal input
-        const run = await client.actor("curious_coder/facebook-ads-library-scraper").call(input);
+        // Process the data
+        const transformedData = processResults(jsonData);
 
-        console.log('Actor run finished successfully.');
-        console.log('Run ID:', run.id);
-
-        // Get results
-        const { items } = await client.dataset(run.defaultDatasetId).listItems();
-        console.log(`Retrieved ${items.length} results.`);
+        console.log('Results:');
+        console.dir(transformedData, { depth: null });
 
     } catch (error) {
         console.error('Error running actor:', error);
-
-        // Try to extract more information from the error
-        if (error.message && error.message.includes('invalid-input')) {
-            console.error('\nThe input validation is failing. Please try using the Apify web interface directly.');
-            console.error('Copy this URL:');
-            console.error(input.urls[0]);
-            console.error('And paste it into the URLs field in the Apify web interface.');
-        }
     }
 })();
