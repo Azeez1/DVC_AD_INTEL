@@ -34,7 +34,7 @@ Apify.main(async () => {
             },
         },
         // This function is called for each page the crawler visits.
-        handlePageFunction: async ({ page, request, log }) => {
+        handlePageFunction: async ({ page, request, log = console }) => {
             log.info(`Processing ${request.url}`);
 
             // Wait for the ad container to appear. Adjust the selector and timeout as needed.

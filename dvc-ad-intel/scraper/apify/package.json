@@ -4,5 +4,7 @@
   "main": "facebook_ads_actor.js",
   "dependencies": {
     "apify": "^2.3.0"
+    "playwright": "^1.33.0"
+
   }
 }
