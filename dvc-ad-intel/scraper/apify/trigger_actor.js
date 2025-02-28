@@ -1,88 +1,54 @@
 // File: trigger_actor.js
-// Description: Debug version to understand differences between execution environments
+// Description: Fixed script to properly call the Facebook Ads Library scraper
 
 const Apify = require('apify');
-const fs = require('fs');
+const https = require('https');
 
-// Use the exact same API URL as in the working script
-const API_URL = 'https://api.apify.com/v2/acts/curious_coder~facebook-ads-library-scraper/run-sync?token=apify_api_Cs25DCKxbaabAfdKjGDJkMqYaprUST48hBm8';
+// Define the base API URL
+const API_BASE = 'https://api.apify.com/v2/acts/curious_coder~facebook-ads-library-scraper/run-sync';
+const API_TOKEN = 'apify_api_Cs25DCKxbaabAfdKjGDJkMqYaprUST48hBm8';
 
-// Prepare the input parameters
+// Prepare the actor input
 const searchQuery = 'shapewear';
 const count = 20;
 
 // Main function
 (async () => {
     try {
-        console.log('=== ENVIRONMENT INFO ===');
-        console.log('Node version:', process.version);
-        console.log('Working directory:', process.cwd());
-        console.log('Apify version:', Apify.getEnv().apifyClientVersion);
-        console.log('========================');
+        // Prepare the input object according to what the actor expects
+        const inputObject = {
+            urls: [
+                `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=US&q=${encodeURIComponent(searchQuery)}`
+            ]
+        };
 
-        // Check if we can access the Apify token from environment
-        console.log('APIFY_TOKEN in env:', !!process.env.APIFY_TOKEN);
+        console.log('Sending request with input:', JSON.stringify(inputObject, null, 2));
 
-        // Construct the API URL
-        const apiUrl = `${API_URL}&q=${encodeURIComponent(searchQuery)}`;
-        console.log(`Making request to: ${apiUrl}`);
-
-        // Make HTTP request with detailed logging
-        console.log('Sending request...');
+        // Make an HTTP POST request with proper input format
         const response = await Apify.utils.requestAsBrowser({
-            url: apiUrl,
-            headers: {},
-            timeoutSecs: 60, // Increase timeout
+            url: `${API_BASE}?token=${API_TOKEN}`,
+            method: 'POST',
+            body: JSON.stringify(inputObject),
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            timeoutSecs: 60
         });
 
         console.log(`Response status: ${response.statusCode}`);
-        console.log('Response headers:', response.headers);
 
-        // Save the raw response for inspection
-        if (response.body) {
-            fs.writeFileSync('response_body.txt', response.body);
-            console.log('Saved raw response to response_body.txt');
-
-            // If it's a short response, log it directly
-            if (response.body.length < 1000) {
-                console.log('Response body:', response.body);
-            }
-        }
-
-        // If response is a 400, try a simpler request
-        if (response.statusCode === 400) {
-            console.log('\n=== TRYING ALTERNATIVE REQUEST ===');
-            // Try a simpler API call without search parameters
-            const simpleResponse = await Apify.utils.requestAsBrowser({
-                url: 'https://api.apify.com/v2/acts/curious_coder~facebook-ads-library-scraper?token=apify_api_Cs25DCKxbaabAfdKjGDJkMqYaprUST48hBm8',
-                headers: {},
-            });
-
-            console.log(`Simple API call status: ${simpleResponse.statusCode}`);
-
-            if (simpleResponse.body) {
-                // Try to parse to see the actor metadata
-                try {
-                    const actorInfo = JSON.parse(simpleResponse.body);
-                    console.log('Actor info:', JSON.stringify(actorInfo, null, 2));
-                } catch (e) {
-                    console.log('Could not parse actor info');
-                    console.log('Simple response body:', simpleResponse.body);
-                }
-            }
-        }
-
-        // Try to parse the original response
+        // Parse the JSON response
         let jsonData;
         try {
             jsonData = JSON.parse(response.body);
             console.log('Successfully parsed JSON response');
         } catch (error) {
             console.error(`Failed to parse JSON from API response: ${error}`);
+            console.log('Response body:', response.body);
             return;
         }
 
-        // Process data similar to the original script
+        // Process the response data
         // Limit the results to the specified count
         if (Array.isArray(jsonData)) {
             jsonData = jsonData.slice(0, count);
@@ -94,10 +60,10 @@ const count = 20;
         const adsArray = Array.isArray(jsonData) ? jsonData : (jsonData.results || []);
         console.log(`Found ${adsArray.length} ads in the response`);
 
-        // Transform the data
+        // Transform the data into key fields
         const transformedData = adsArray.map(item => ({
-            searchUrl: apiUrl,
-            adUrl: item.url || apiUrl,
+            searchUrl: inputObject.urls[0],
+            adUrl: item.url || inputObject.urls[0],
             pageName: item.page_name,
             pageUrl: (item.snapshot && item.snapshot.page_profile_uri) || item.page_profile_uri,
             publishedPlatform: item.publisher_platform,
@@ -109,10 +75,8 @@ const count = 20;
             adText: item.snapshot && item.snapshot.body && item.snapshot.body.text
         }));
 
-        console.log('Results:', transformedData.length > 0 ? 'Data found' : 'No data found');
-        if (transformedData.length > 0) {
-            console.dir(transformedData[0], { depth: null });
-        }
+        console.log('Results:');
+        console.dir(transformedData, { depth: null });
 
     } catch (error) {
         console.error('Error:', error);
