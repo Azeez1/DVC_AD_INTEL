@@ -1,5 +1,7 @@
 // File: trigger_actor.js
-// Description: Basic HTTPS POST request to the Apify API with a simplified, properly formatted URL
+// Description: This script sends an HTTPS POST request to the Apify API to trigger the actor
+// "curious_coder/facebook-ads-library-scraper" synchronously. It sends valid input data and then
+// prints the transformed ad data returned by the actor.
 
 const https = require('https');
 
@@ -7,14 +9,11 @@ const https = require('https');
 const searchQuery = 'shapewear';
 const count = 20;
 
-// Prepare the request data with a simpler URL format
-// The API appears to be very strict about URL validation
+// Prepare the request data with a complete, valid URL (including query parameters)
 const postData = JSON.stringify({
     urls: [
-        // Use a simple URL without query parameters that might be causing validation issues
-        "https://www.facebook.com/ads/library"
+        "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=US&q=%22shapewear%22&search_type=keyword_exact_phrase"
     ],
-    // Add additional parameters separately instead of in the URL
     searchTerms: [searchQuery],
     countryCode: "US", 
     adActiveStatus: "active",
@@ -75,7 +74,7 @@ const req = https.request(options, (res) => {
 
             // Transform the data into key fields
             const transformedData = adsArray.map(item => ({
-                searchUrl: `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=US&q=${searchQuery}`,
+                searchUrl: `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=US&q=${searchQuery}&search_type=keyword_exact_phrase`,
                 adUrl: item.url || '',
                 pageName: item.page_name,
                 pageUrl: (item.snapshot && item.snapshot.page_profile_uri) || item.page_profile_uri,
@@ -92,7 +91,6 @@ const req = https.request(options, (res) => {
             console.dir(transformedData, { depth: null });
 
         } catch (e) {
-            // Not JSON or parsing error
             console.error('Error parsing response:', e);
             console.log('Raw response:', responseData);
         }
