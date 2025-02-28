@@ -1,6 +1,6 @@
 // File: trigger_actor_sync.js
-// Description: This script triggers the actor "curious_coder/facebook-ads-library-scraper"
-// synchronously (using the "sync" option) and prints the resulting dataset items.
+// Description: This script triggers the actor "curious_coder/facebook-ads-library-scraper" synchronously
+// using the "run-sync-get-dataset-items" endpoint and prints the resulting dataset items.
 
 const { ApifyClient } = require('apify-client');
 
@@ -17,17 +17,10 @@ const input = {
 
 (async () => {
     try {
-        // Trigger the actor synchronously by using the "sync" option.
-        const run = await client.actor("curious_coder/facebook-ads-library-scraper").call(input, {
-            sync: true,      // Use "sync" option, not "runSync"
-            waitSecs: 300    // Wait up to 300 seconds for the run to finish.
-        });
+        // Trigger the actor synchronously by calling the dedicated endpoint.
+        const output = await client.actor("curious_coder/facebook-ads-library-scraper/run-sync-get-dataset-items").call(input);
         console.log('Dataset items from the actor run:');
-        // Retrieve dataset items from the actor's default dataset.
-        const { items } = await client.dataset(run.defaultDatasetId).listItems();
-        items.forEach(item => {
-            console.dir(item);
-        });
+        console.dir(output, { depth: null });
     } catch (error) {
         console.error('Error running actor synchronously:', error);
     }
