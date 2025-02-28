@@ -1,10 +1,15 @@
 {
   "name": "facebook-ads-actor",
   "version": "1.0.0",
+  "description": "Actor for Facebook Ads Library scraping or API calling",
   "main": "facebook_ads_actor.js",
+  "scripts": {
+    "start": "node facebook_ads_actor.js"
+  },
   "dependencies": {
-    "apify": "^2.3.0"
-    "playwright": "^1.33.0"
-
-  }
+    "apify": "^2.3.2",
+    "playwright": "^1.50.1"
+  },
+  "author": "",
+  "license": "MIT"
 }
