@@ -18,7 +18,6 @@ Apify.main(async () => {
     const apiUrl = `${API_URL}?q=${encodeURIComponent(searchQuery)}`;
 
     // 3. Make an HTTP request to the JSON API.
-    //    requestAsBrowser() mimics a browser request (useful if the API requires a browser-like header).
     const response = await Apify.utils.requestAsBrowser({
         url: apiUrl,
         headers: {
@@ -26,7 +25,7 @@ Apify.main(async () => {
         },
     });
 
-    // 4. Parse the JSON response.
+    // 4. Parse the JSON Response.
     let jsonData;
     try {
         jsonData = JSON.parse(response.body);
@@ -34,41 +33,34 @@ Apify.main(async () => {
         throw new Error(`Failed to parse JSON from API response: ${error}`);
     }
 
-    // 5. Limit the results to the specified count.
+    // 5. Limit the Results to the specified count.
     if (Array.isArray(jsonData)) {
         jsonData = jsonData.slice(0, count);
     } else if (jsonData.results && Array.isArray(jsonData.results)) {
         jsonData.results = jsonData.results.slice(0, count);
     }
 
-    // 6. Transform the data to extract key fields.
-    //    This mapping creates an object for each ad with:
-    //    - searchUrl: the URL used for the API call,
-    //    - adUrl: the dedicated ad URL if available,
-    //    - pageName and pageUrl,
-    //    - publishedPlatform,
-    //    - adTitle, adCTAText, adCTALink,
-    //    - adImages: all images (for carousel ads),
-    //    - adVideos: all videos,
-    //    - adText: the descriptive ad text.
-    const adsArray = Array.isArray(jsonData) ? jsonData : jsonData.results;
+    // 6. Transform the Data
+    // Safely extract adsArray from jsonData. If jsonData is an array, use it,
+    // otherwise try to use jsonData.results, or fallback to an empty array.
+    const adsArray = Array.isArray(jsonData) ? jsonData : (jsonData.results || []);
     const transformedData = adsArray.map(item => {
         return {
-            searchUrl: apiUrl,
-            adUrl: item.url || apiUrl,
-            pageName: item.page_name,
-            pageUrl: (item.snapshot && item.snapshot.page_profile_uri) || item.page_profile_uri,
-            publishedPlatform: item.publisher_platform,
-            adTitle: item.snapshot && item.snapshot.title,
-            adCTAText: item.snapshot && item.snapshot.cta_text,
-            adCTALink: item.snapshot && item.snapshot.link_url,
-            adImages: (item.snapshot && item.snapshot.images) ? item.snapshot.images : [],
-            adVideos: (item.snapshot && item.snapshot.videos) ? item.snapshot.videos : [],
-            adText: item.snapshot && item.snapshot.body && item.snapshot.body.text
+            searchUrl: apiUrl,                              // The URL used for the API call
+            adUrl: item.url || apiUrl,                        // Ad URL (fallbacks to searchUrl if no dedicated URL)
+            pageName: item.page_name,                         // The page name
+            pageUrl: (item.snapshot && item.snapshot.page_profile_uri) || item.page_profile_uri, // The page URL
+            publishedPlatform: item.publisher_platform,       // The platforms where the ad was published
+            adTitle: item.snapshot && item.snapshot.title,    // The ad title
+            adCTAText: item.snapshot && item.snapshot.cta_text, // The call-to-action text
+            adCTALink: item.snapshot && item.snapshot.link_url, // The call-to-action link
+            adImages: (item.snapshot && item.snapshot.images) ? item.snapshot.images : [], // All images (for carousel ads)
+            adVideos: (item.snapshot && item.snapshot.videos) ? item.snapshot.videos : [], // All videos (for carousel ads)
+            adText: item.snapshot && item.snapshot.body && item.snapshot.body.text // The ad's descriptive text
         };
     });
 
-    // 7. Push the transformed data into Apify's default dataset.
+    // 7. Push the Transformed Data into Apify's Default Dataset.
     await Apify.pushData(transformedData);
 
     console.log('Transformed API data stored successfully.');
