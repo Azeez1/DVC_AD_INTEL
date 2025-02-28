@@ -1,6 +1,5 @@
 // File: trigger_actor.js
-// Description: This script triggers the actor "curious_coder/facebook-ads-library-scraper"
-// with the correct input format including the required "urls" field
+// Description: This script triggers the Facebook Ad Library Scraper using the correct URL format
 
 const { ApifyClient } = require('apify-client');
 
@@ -9,16 +8,15 @@ const client = new ApifyClient({
     token: 'apify_api_Cs25DCKxbaabAfdKjGDJkMqYaprUST48hBm8',
 });
 
-// Prepare the actor input with the required "urls" field
-// Format the input according to the actor's expected format
+// The input format matching exactly what's shown in the screenshot
+// Notice the URL format is different from what we were using before
 const input = {
-    urls: [
-        `https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=US&q=${encodeURIComponent("shapewear")}&sort_data[direction]=desc&sort_data[mode]=relevancy_monthly_grouped&search_type=keyword_unordered`
+    "urls": [
+        "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=US&q=shapewear"
     ],
-    maxPagesPerSearch: 5,   // Limit the number of pages to scrape
-    maxAdsPerPage: 20,      // Limit the number of ads per page
-    extendOutputFunction: "",
-    language: "en-US"
+    "scrapeAdDetails": true,
+    "maxPagesPerSearch": 5,
+    "totalNumberOfRecordsRequired": 20
 };
 
 (async () => {
@@ -27,6 +25,7 @@ const input = {
         console.log('Starting actor run with the following input:');
         console.log(JSON.stringify(input, null, 2));
 
+        // Make sure we're using the correct actor ID based on the screenshot
         const run = await client.actor("curious_coder/facebook-ads-library-scraper").call(input);
 
         console.log('Actor run finished successfully.');
