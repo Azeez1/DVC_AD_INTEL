@@ -1,54 +1,100 @@
 // File: trigger_actor.js
-// Description: Updated to be an exact match to the working approach in facebook_ads_actor.js
+// Description: Debug version to understand differences between execution environments
 
-const https = require('https');
 const Apify = require('apify');
+const fs = require('fs');
 
 // Use the exact same API URL as in the working script
 const API_URL = 'https://api.apify.com/v2/acts/curious_coder~facebook-ads-library-scraper/run-sync?token=apify_api_Cs25DCKxbaabAfdKjGDJkMqYaprUST48hBm8';
 
-// Prepare the input parameters (same as facebook_ads_actor.js)
+// Prepare the input parameters
 const searchQuery = 'shapewear';
 const count = 20;
 
 // Main function
 (async () => {
     try {
-        // Construct the API URL using your endpoint and the search query 
-        // (exactly as in facebook_ads_actor.js)
-        const apiUrl = `${API_URL}&q=${encodeURIComponent(searchQuery)}`;
+        console.log('=== ENVIRONMENT INFO ===');
+        console.log('Node version:', process.version);
+        console.log('Working directory:', process.cwd());
+        console.log('Apify version:', Apify.getEnv().apifyClientVersion);
+        console.log('========================');
 
+        // Check if we can access the Apify token from environment
+        console.log('APIFY_TOKEN in env:', !!process.env.APIFY_TOKEN);
+
+        // Construct the API URL
+        const apiUrl = `${API_URL}&q=${encodeURIComponent(searchQuery)}`;
         console.log(`Making request to: ${apiUrl}`);
 
-        // Make an HTTP request to the JSON API (exactly as in facebook_ads_actor.js)
+        // Make HTTP request with detailed logging
+        console.log('Sending request...');
         const response = await Apify.utils.requestAsBrowser({
             url: apiUrl,
-            headers: {
-                // Empty headers object, just like in facebook_ads_actor.js
-            },
+            headers: {},
+            timeoutSecs: 60, // Increase timeout
         });
 
         console.log(`Response status: ${response.statusCode}`);
+        console.log('Response headers:', response.headers);
 
-        // Parse the JSON response (exactly as in facebook_ads_actor.js)
+        // Save the raw response for inspection
+        if (response.body) {
+            fs.writeFileSync('response_body.txt', response.body);
+            console.log('Saved raw response to response_body.txt');
+
+            // If it's a short response, log it directly
+            if (response.body.length < 1000) {
+                console.log('Response body:', response.body);
+            }
+        }
+
+        // If response is a 400, try a simpler request
+        if (response.statusCode === 400) {
+            console.log('\n=== TRYING ALTERNATIVE REQUEST ===');
+            // Try a simpler API call without search parameters
+            const simpleResponse = await Apify.utils.requestAsBrowser({
+                url: 'https://api.apify.com/v2/acts/curious_coder~facebook-ads-library-scraper?token=apify_api_Cs25DCKxbaabAfdKjGDJkMqYaprUST48hBm8',
+                headers: {},
+            });
+
+            console.log(`Simple API call status: ${simpleResponse.statusCode}`);
+
+            if (simpleResponse.body) {
+                // Try to parse to see the actor metadata
+                try {
+                    const actorInfo = JSON.parse(simpleResponse.body);
+                    console.log('Actor info:', JSON.stringify(actorInfo, null, 2));
+                } catch (e) {
+                    console.log('Could not parse actor info');
+                    console.log('Simple response body:', simpleResponse.body);
+                }
+            }
+        }
+
+        // Try to parse the original response
         let jsonData;
         try {
             jsonData = JSON.parse(response.body);
+            console.log('Successfully parsed JSON response');
         } catch (error) {
-            throw new Error(`Failed to parse JSON from API response: ${error}`);
+            console.error(`Failed to parse JSON from API response: ${error}`);
+            return;
         }
 
-        // Limit the results to the specified count (exactly as in facebook_ads_actor.js)
+        // Process data similar to the original script
+        // Limit the results to the specified count
         if (Array.isArray(jsonData)) {
             jsonData = jsonData.slice(0, count);
         } else if (jsonData.results && Array.isArray(jsonData.results)) {
             jsonData.results = jsonData.results.slice(0, count);
         }
 
-        // Safely extract the ads array (exactly as in facebook_ads_actor.js)
+        // Safely extract the ads array
         const adsArray = Array.isArray(jsonData) ? jsonData : (jsonData.results || []);
+        console.log(`Found ${adsArray.length} ads in the response`);
 
-        // Transform the data into key fields (exactly as in facebook_ads_actor.js)
+        // Transform the data
         const transformedData = adsArray.map(item => ({
             searchUrl: apiUrl,
             adUrl: item.url || apiUrl,
@@ -63,8 +109,10 @@ const count = 20;
             adText: item.snapshot && item.snapshot.body && item.snapshot.body.text
         }));
 
-        console.log('Results:');
-        console.dir(transformedData, { depth: null });
+        console.log('Results:', transformedData.length > 0 ? 'Data found' : 'No data found');
+        if (transformedData.length > 0) {
+            console.dir(transformedData[0], { depth: null });
+        }
 
     } catch (error) {
         console.error('Error:', error);
