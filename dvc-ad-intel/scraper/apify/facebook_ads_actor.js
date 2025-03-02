@@ -1,99 +1,79 @@
-// File: facebook_ads_actor.js
-// Description: This actor sends a POST request to your JSON API endpoint (facebook-ads-library-scraper)
-// using the full input JSON provided via Apify.getInput() (which includes parameters like urls, searchTerms, etc.).
-// It uses the runs endpoint with waitForFinish=true so that the actor can (hopefully) honor the "limit" parameter.
-// It then limits the number of ads to a specified count, transforms each ad into an object with key fields,
-// and pushes the transformed data to the default dataset.
-
-const API_RUNS_URL = 'https://api.apify.com/v2/acts/curious_coder~facebook-ads-library-scraper/runs?token=apify_api_Cs25DCKxbaabAfdKjGDJkMqYaprUST48hBm8&waitForFinish=true';
-
 const Apify = require('apify');
 
 Apify.main(async () => {
     // Retrieve input from the Apify UI.
-    // Expected input may include properties like urls, searchTerms, countryCode, adActiveStatus, adType, etc.
+    // Expect properties like urls, searchTerms, and limit. Default limit is 20.
     const input = await Apify.getInput() || {};
+    const limit = input.limit || 20;
 
-    // Set default values if not provided via input.
-    const searchQuery = input.searchQuery || 'shapewear';
-    const count = input.count || 20;
-
-    // If the input doesn't already include required parameters, add them.
+    // Ensure there is at least one URL to scrape.
     if (!input.urls) {
         input.urls = [{
             url: "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=US&q=%22shapewear%22&search_type=keyword_exact_phrase"
         }];
     }
-    if (!input.searchTerms) {
-        input.searchTerms = [searchQuery];
-    }
-    if (!input.countryCode) {
-        input.countryCode = "US";
-    }
-    if (!input.adActiveStatus) {
-        input.adActiveStatus = "active";
-    }
-    if (!input.adType) {
-        input.adType = "all";
-    }
-    // New addition: include a limit parameter so the actor knows to stop after 20 ads.
-    if (!input.limit) {
-        input.limit = count;
+
+    // Create a RequestQueue and add each URL.
+    const requestQueue = await Apify.openRequestQueue();
+    for (const urlObj of input.urls) {
+        await requestQueue.addRequest({ url: urlObj.url });
     }
 
-    // Convert the full input to a JSON string to be used as the POST payload.
-    const postData = JSON.stringify(input);
+    // Global array to store the collected ads.
+    const collectedAds = [];
 
-    // Make a POST request to the API runs endpoint with waitForFinish=true.
-    const response = await Apify.utils.requestAsBrowser({
-        url: API_RUNS_URL,
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
+    // Define the page handling function.
+    const handlePageFunction = async ({ $, request }) => {
+        // Check before processing this page if we already have enough ads.
+        if (collectedAds.length >= limit) {
+            console.log(`Limit of ${limit} ads already reached. Skipping page: ${request.url}`);
+            return;
+        }
+
+        // Extract ads from the page.
+        // (Update the selectors below to match your target page.)
+        const adsOnPage = [];
+        $('.ad-container').each((index, el) => {
+            // If we already reached the limit, stop adding more.
+            if (collectedAds.length + adsOnPage.length >= limit) {
+                return false; // Exit the each() loop early.
+            }
+            const ad = {
+                url: $(el).find('a').attr('href'),
+                pageName: $(el).find('.page-name').text().trim(),
+                // Add other fields as needed...
+            };
+            adsOnPage.push(ad);
+        });
+        console.log(`Found ${adsOnPage.length} ads on page: ${request.url}`);
+
+        // Add extracted ads to our global collection.
+        collectedAds.push(...adsOnPage);
+
+        // If after processing this page we reached (or exceeded) the limit,
+        // clear the remaining requests to stop further scraping.
+        if (collectedAds.length >= limit) {
+            console.log(`Reached the limit of ${limit} ads. Dropping remaining requests.`);
+            await requestQueue.drop();
+        }
+    };
+
+    // Create and run a CheerioCrawler with our custom page function.
+    const crawler = new Apify.CheerioCrawler({
+        requestQueue,
+        maxConcurrency: 5,
+        handlePageFunction,
+        handleFailedRequestFunction: async ({ request }) => {
+            console.log(`Request ${request.url} failed too many times.`);
         },
-        body: postData
     });
 
-    // Parse the JSON response from the API and log the raw response for debugging.
-    let jsonData;
-    try {
-        jsonData = JSON.parse(response.body);
-        console.log("Raw response from actor:", jsonData);
-    } catch (error) {
-        throw new Error(`Failed to parse JSON from API response: ${error}`);
-    }
+    await crawler.run();
 
-    // Limit the results to the specified count.
-    // The API might return the data directly as an array or nested in a "results" field.
-    let adsArray = Array.isArray(jsonData)
-        ? jsonData.slice(0, count)
-        : (jsonData.results && Array.isArray(jsonData.results))
-            ? jsonData.results.slice(0, count)
-            : [];
+    // Trim the collected ads array in case it slightly exceeded the limit.
+    const finalAds = collectedAds.slice(0, limit);
 
-    // Log if we've reached the ad limit.
-    if (adsArray.length >= count) {
-        console.log(`Reached the ad limit of ${count}. Stopping extraction.`);
-    } else {
-        console.log(`Only ${adsArray.length} ads were returned by the actor.`);
-    }
-
-    // Transform each ad into an object with key fields.
-    const transformedData = adsArray.map(item => ({
-        searchUrl: API_RUNS_URL,
-        adUrl: item.url || API_RUNS_URL,
-        pageName: item.page_name,
-        pageUrl: (item.snapshot && item.snapshot.page_profile_uri) || item.page_profile_uri,
-        publishedPlatform: item.publisher_platform,
-        adTitle: item.snapshot && item.snapshot.title,
-        adCTAText: item.snapshot && item.snapshot.cta_text,
-        adCTALink: item.snapshot && item.snapshot.link_url,
-        adImages: (item.snapshot && item.snapshot.images) ? item.snapshot.images : [],
-        adVideos: (item.snapshot && item.snapshot.videos) ? item.snapshot.videos : [],
-        adText: item.snapshot && item.snapshot.body && item.snapshot.body.text
-    }));
-
-    // Push only the first 'count' ads to the dataset.
-    await Apify.pushData(transformedData.slice(0, count));
-    console.log(`Transformed API data stored successfully. Ads stored: ${transformedData.length}`);
+    // Push the final set of ads to the default dataset.
+    await Apify.pushData(finalAds);
+    console.log(`Scraping finished. Collected ${finalAds.length} ads (limit was ${limit}).`);
 });
