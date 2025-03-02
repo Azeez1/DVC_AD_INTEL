@@ -1,10 +1,11 @@
 // File: facebook_ads_actor.js
 // Description: This actor sends a POST request to your JSON API endpoint (facebook-ads-library-scraper)
 // using the full input JSON provided via Apify.getInput() (which includes parameters like urls, searchTerms, etc.).
-// It limits the number of ads to a specified count, transforms each ad into an object with key fields,
+// It uses the runs endpoint with waitForFinish=true so that the actor can honor the "limit" parameter and stop early.
+// It then limits the number of ads to a specified count, transforms each ad into an object with key fields,
 // and pushes the transformed data to the default dataset.
 
-const API_URL = 'https://api.apify.com/v2/acts/curious_coder~facebook-ads-library-scraper/run-sync?token=apify_api_Cs25DCKxbaabAfdKjGDJkMqYaprUST48hBm8';
+const API_RUNS_URL = 'https://api.apify.com/v2/acts/curious_coder~facebook-ads-library-scraper/runs?token=apify_api_Cs25DCKxbaabAfdKjGDJkMqYaprUST48hBm8&waitForFinish=true';
 
 const Apify = require('apify');
 
@@ -35,7 +36,7 @@ Apify.main(async () => {
     if (!input.adType) {
         input.adType = "all";
     }
-    // *** New addition ***: If the actor supports a limit parameter, add it to the input.
+    // *** New addition ***: Include a limit parameter so the actor knows to stop after 20 ads.
     if (!input.limit) {
         input.limit = count;
     }
@@ -43,9 +44,9 @@ Apify.main(async () => {
     // Convert the full input to a JSON string to be used as the POST payload.
     const postData = JSON.stringify(input);
 
-    // Make a POST request to the API endpoint with the full input payload.
+    // Make a POST request to the API runs endpoint with waitForFinish=true and the full input payload.
     const response = await Apify.utils.requestAsBrowser({
-        url: API_URL,
+        url: API_RUNS_URL,
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -76,9 +77,9 @@ Apify.main(async () => {
 
     // Transform each ad into an object with key fields.
     const transformedData = adsArray.map(item => ({
-        // The searchUrl here is set as the API_URL (can be customized as needed).
-        searchUrl: API_URL,
-        adUrl: item.url || API_URL,
+        // The searchUrl here is set as the API_RUNS_URL (can be customized as needed).
+        searchUrl: API_RUNS_URL,
+        adUrl: item.url || API_RUNS_URL,
         pageName: item.page_name,
         pageUrl: (item.snapshot && item.snapshot.page_profile_uri) || item.page_profile_uri,
         publishedPlatform: item.publisher_platform,
