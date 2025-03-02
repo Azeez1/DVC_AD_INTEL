@@ -5,7 +5,6 @@
 // Replace API_URL with your actual working endpoint.
 const API_URL = 'https://api.apify.com/v2/acts/curious_coder~facebook-ads-library-scraper/run-sync?token=apify_api_Cs25DCKxbaabAfdKjGDJkMqYaprUST48hBm8';
 
-
 const Apify = require('apify');
 
 Apify.main(async () => {
@@ -34,34 +33,35 @@ Apify.main(async () => {
     }
 
     // Limit the results to the specified count.
-   // Enforce strict limit of 'count' (default 20)
+    // Enforce strict limit of 'count' (default 20) by slicing the data appropriately.
     let adsArray = Array.isArray(jsonData)
         ? jsonData.slice(0, count)
         : (jsonData.results && Array.isArray(jsonData.results))
             ? jsonData.results.slice(0, count)
             : [];
 
-// Stop execution if we already have 20 ads
-if (adsArray.length >= count) {
-    console.log(`Reached the ad limit of ${count}. Stopping extraction.`);
-}
+    // Log if we've reached the ad limit.
+    if (adsArray.length >= count) {
+        console.log(`Reached the ad limit of ${count}. Stopping extraction.`);
+    }
 
-// Transform the data into key fields
-const transformedData = adsArray.map(item => ({
-    searchUrl: apiUrl,
-    adUrl: item.url || apiUrl,
-    pageName: item.page_name,
-    pageUrl: (item.snapshot && item.snapshot.page_profile_uri) || item.page_profile_uri,
-    publishedPlatform: item.publisher_platform,
-    adTitle: item.snapshot && item.snapshot.title,
-    adCTAText: item.snapshot && item.snapshot.cta_text,
-    adCTALink: item.snapshot && item.snapshot.link_url,
-    adImages: (item.snapshot && item.snapshot.images) ? item.snapshot.images : [],
-    adVideos: (item.snapshot && item.snapshot.videos) ? item.snapshot.videos : [],
-    adText: item.snapshot && item.snapshot.body && item.snapshot.body.text
-}));
+    // Transform each ad into an object with only the key fields.
+    const transformedData = adsArray.map(item => ({
+        searchUrl: apiUrl,
+        adUrl: item.url || apiUrl,
+        pageName: item.page_name,
+        pageUrl: (item.snapshot && item.snapshot.page_profile_uri) || item.page_profile_uri,
+        publishedPlatform: item.publisher_platform,
+        adTitle: item.snapshot && item.snapshot.title,
+        adCTAText: item.snapshot && item.snapshot.cta_text,
+        adCTALink: item.snapshot && item.snapshot.link_url,
+        adImages: (item.snapshot && item.snapshot.images) ? item.snapshot.images : [],
+        adVideos: (item.snapshot && item.snapshot.videos) ? item.snapshot.videos : [],
+        adText: item.snapshot && item.snapshot.body && item.snapshot.body.text
+    }));
 
-// Ensure only the first 'count' ads are pushed
-await Apify.pushData(transformedData.slice(0, count));
-console.log(`Transformed API data stored successfully. Ads stored: ${transformedData.length}`);
+    // Push only the first 'count' ads to the dataset.
+    await Apify.pushData(transformedData.slice(0, count));
+    console.log(`Transformed API data stored successfully. Ads stored: ${transformedData.length}`);
 
+}); // <-- This closing bracket and parenthesis close the Apify.main() callback.
