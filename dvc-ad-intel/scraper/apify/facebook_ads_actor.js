@@ -35,6 +35,5 @@ Apify.main(async () => {
     console.log('Restructured Items:');
     console.dir(restructuredItems, { depth: null });
 
-    // End the actor.
-    await Apify.exit();
+
 });
