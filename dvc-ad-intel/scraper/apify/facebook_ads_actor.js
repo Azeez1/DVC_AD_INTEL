@@ -9,10 +9,8 @@ const API_URL = 'https://api.apify.com/v2/acts/curious_coder~facebook-ads-librar
 const Apify = require('apify');
 
 Apify.main(async () => {
-    // Retrieve input from the Apify UI. Expect a JSON object that may include:
-    // - urls: an array of objects with a 'url' property
-    // - searchTerms: an array of search terms
-    // - countryCode, adActiveStatus, adType, etc.
+    // Retrieve input from the Apify UI.
+    // Expected input may include properties like urls, searchTerms, countryCode, adActiveStatus, adType, etc.
     const input = await Apify.getInput() || {};
 
     // Set default values if not provided via input.
@@ -36,6 +34,10 @@ Apify.main(async () => {
     }
     if (!input.adType) {
         input.adType = "all";
+    }
+    // *** New addition ***: If the actor supports a limit parameter, add it to the input.
+    if (!input.limit) {
+        input.limit = count;
     }
 
     // Convert the full input to a JSON string to be used as the POST payload.
@@ -74,7 +76,7 @@ Apify.main(async () => {
 
     // Transform each ad into an object with key fields.
     const transformedData = adsArray.map(item => ({
-        // The searchUrl here can be customized; we use API_URL as a placeholder.
+        // The searchUrl here is set as the API_URL (can be customized as needed).
         searchUrl: API_URL,
         adUrl: item.url || API_URL,
         pageName: item.page_name,
