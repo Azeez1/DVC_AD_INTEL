@@ -1,39 +1,39 @@
 const Apify = require('apify');
 
 Apify.main(async () => {
-    // Use the dummy dataset ID "78SEFjfQs3zfaAHzG"
+    // Use the dummy dataset ID
     const datasetId = '78SEFjfQs3zfaAHzG';
 
-    // Open the dataset using the provided dataset ID.
+    // Open the dataset from Apify storage.
     const dataset = await Apify.openDataset(datasetId);
 
     // Retrieve all items from the dataset.
-    const { items } = await dataset.getData();
+    // You can adjust limit and offset if needed.
+    const { items } = await dataset.getData({ offset: 0, limit: 10000 });
     console.log(`Retrieved ${items.length} items from the dataset.`);
 
+    // Check if items were returned
+    if (items.length === 0) {
+        console.warn('No items found in the dataset. Make sure your scraping job has produced data.');
+    }
+
     // Restructure each item.
-    // This example creates a new object with:
-    // - 'url': the original adUrl,
-    // - 'name': the original pageName,
-    // - 'details': an object containing additional fields.
+    // Adjust these fields to match the structure of your scraped JSON.
     const restructuredItems = items.map(item => ({
-        url: item.adUrl || '',
-        name: item.pageName || '',
-        details: {
-            pageUrl: item.pageUrl || '',
-            platform: item.publishedPlatform || '',
-            title: item.adTitle || '',
-            ctaText: item.adCTAText || '',
-            ctaLink: item.adCTALink || '',
-            images: item.adImages || [],
-            videos: item.adVideos || [],
-            text: item.adText || '',
-        },
+        searchUrl: item.url || '',
+        adUrl: item.url || '',
+        pageName: item.page_name || '',
+        pageUrl: (item.snapshot && item.snapshot.page_profile_uri) || item.page_profile_uri || '',
+        publishedPlatform: item.publisher_platform || '',
+        adTitle: (item.snapshot && item.snapshot.title) || '',
+        adCTAText: (item.snapshot && item.snapshot.cta_text) || '',
+        adCTALink: (item.snapshot && item.snapshot.link_url) || '',
+        adImages: (item.snapshot && item.snapshot.images) || [],
+        adVideos: (item.snapshot && item.snapshot.videos) || [],
+        adText: (item.snapshot && item.snapshot.body && item.snapshot.body.text) || ''
     }));
 
-    // Log the restructured items for inspection.
+    // Log the restructured data for inspection.
     console.log('Restructured Items:');
     console.dir(restructuredItems, { depth: null });
-
-
 });
