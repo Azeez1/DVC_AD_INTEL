@@ -1,30 +1,57 @@
 // File: facebook_ads_actor.js
-// Description: This actor calls your JSON API endpoint, limits results, transforms each ad
-// into an object with key fields (with separate arrays for images and videos), and pushes the data to the dataset.
+// Description: This actor sends a POST request to your JSON API endpoint (facebook-ads-library-scraper)
+// using the full input JSON provided via Apify.getInput() (which includes parameters like urls, searchTerms, etc.).
+// It limits the number of ads to a specified count, transforms each ad into an object with key fields,
+// and pushes the transformed data to the default dataset.
 
-// Replace API_URL with your actual working endpoint.
 const API_URL = 'https://api.apify.com/v2/acts/curious_coder~facebook-ads-library-scraper/run-sync?token=apify_api_Cs25DCKxbaabAfdKjGDJkMqYaprUST48hBm8';
 
 const Apify = require('apify');
 
 Apify.main(async () => {
-    // Get input parameters (defaults provided)
+    // Retrieve input from the Apify UI. Expect a JSON object that may include:
+    // - urls: an array of objects with a 'url' property
+    // - searchTerms: an array of search terms
+    // - countryCode, adActiveStatus, adType, etc.
     const input = await Apify.getInput() || {};
+
+    // Set default values if not provided via input.
     const searchQuery = input.searchQuery || 'shapewear';
     const count = input.count || 20;
 
-    // Construct the API URL using your endpoint and the search query.
-    const apiUrl = `${API_URL}?q=${encodeURIComponent(searchQuery)}`;
+    // If the input doesn't already include required parameters, add them.
+    if (!input.urls) {
+        input.urls = [{
+            url: "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=US&q=%22shapewear%22&search_type=keyword_exact_phrase"
+        }];
+    }
+    if (!input.searchTerms) {
+        input.searchTerms = [searchQuery];
+    }
+    if (!input.countryCode) {
+        input.countryCode = "US";
+    }
+    if (!input.adActiveStatus) {
+        input.adActiveStatus = "active";
+    }
+    if (!input.adType) {
+        input.adType = "all";
+    }
 
-    // Make an HTTP request to the JSON API.
+    // Convert the full input to a JSON string to be used as the POST payload.
+    const postData = JSON.stringify(input);
+
+    // Make a POST request to the API endpoint with the full input payload.
     const response = await Apify.utils.requestAsBrowser({
-        url: apiUrl,
+        url: API_URL,
+        method: 'POST',
         headers: {
-            // Add any necessary headers (e.g., Authorization) if required.
+            'Content-Type': 'application/json'
         },
+        body: postData
     });
 
-    // Parse the JSON response.
+    // Parse the JSON response from the API.
     let jsonData;
     try {
         jsonData = JSON.parse(response.body);
@@ -33,7 +60,7 @@ Apify.main(async () => {
     }
 
     // Limit the results to the specified count.
-    // Enforce strict limit of 'count' (default 20) by slicing the data appropriately.
+    // The API might return the data directly as an array or nested in a "results" field.
     let adsArray = Array.isArray(jsonData)
         ? jsonData.slice(0, count)
         : (jsonData.results && Array.isArray(jsonData.results))
@@ -45,10 +72,11 @@ Apify.main(async () => {
         console.log(`Reached the ad limit of ${count}. Stopping extraction.`);
     }
 
-    // Transform each ad into an object with only the key fields.
+    // Transform each ad into an object with key fields.
     const transformedData = adsArray.map(item => ({
-        searchUrl: apiUrl,
-        adUrl: item.url || apiUrl,
+        // The searchUrl here can be customized; we use API_URL as a placeholder.
+        searchUrl: API_URL,
+        adUrl: item.url || API_URL,
         pageName: item.page_name,
         pageUrl: (item.snapshot && item.snapshot.page_profile_uri) || item.page_profile_uri,
         publishedPlatform: item.publisher_platform,
@@ -63,5 +91,4 @@ Apify.main(async () => {
     // Push only the first 'count' ads to the dataset.
     await Apify.pushData(transformedData.slice(0, count));
     console.log(`Transformed API data stored successfully. Ads stored: ${transformedData.length}`);
-
-}); // <-- This closing bracket and parenthesis close the Apify.main() callback.
+});
