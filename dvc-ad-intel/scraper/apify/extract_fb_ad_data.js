@@ -93,5 +93,8 @@ function processItems(items) {
     
     // Log the restructured data for inspection
     console.log('Restructured Items:');
-    console.dir(restructuredItems, { depth: null });
+    restructuredItems.forEach(item => {
+        console.dir(item, { depth: null });
+        console.log('---'); // Divider after each item
+    });
 }
