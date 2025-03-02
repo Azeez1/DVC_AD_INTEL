@@ -1,65 +1,73 @@
 
 const Apify = require('apify');
+const { ApifyClient } = require('apify-client');
+
+// Define the search query
+const searchQuery = 'shapewear';
+const count = 20;
 
 Apify.main(async () => {
     try {
         console.log('Starting Facebook Ads Actor...');
         
-        // You can specify your dataset ID here
-        // If left empty, it will use the default dataset associated with the current actor run
-        const datasetId = process.env.DATASET_ID || '';
+        // First try to use the original dataset ID that was working before
+        const datasetId = '78SEFjfQs3zfaAHzG';
         
-        // Open the dataset from Apify storage
-        const dataset = await Apify.openDataset(datasetId);
-        console.log(`Opened dataset${datasetId ? ` with ID: ${datasetId}` : ' (default)'}`);
+        console.log(`Attempting to fetch data from dataset ID: ${datasetId}`);
         
-        // Retrieve all items from the dataset
-        // You can adjust limit and offset if needed
-        const { items } = await dataset.getData({ offset: 0, limit: 1000 });
-        console.log(`Retrieved ${items.length} items from the dataset.`);
-        
-        // Check if items were returned
-        if (items.length === 0) {
-            console.warn('No items found in the dataset. Make sure your scraping job has produced data.');
-            console.warn('Attempting to fetch some sample ads directly with API...');
+        try {
+            // Open the dataset from Apify storage
+            const dataset = await Apify.openDataset(datasetId);
             
-            // Fallback: Use API to get some sample data
-            const { ApifyClient } = require('apify-client');
+            // Retrieve items from the dataset
+            const { items } = await dataset.getData({ offset: 0, limit: 1000 });
+            console.log(`Retrieved ${items.length} items from the dataset.`);
             
-            // Initialize the ApifyClient with API token
-            const client = new ApifyClient({
-                token: 'apify_api_Cs25DCKxbaabAfdKjGDJkMqYaprUST48hBm8',
-            });
-            
-            // Run the actor to get facebook ads data
-            const run = await client.actor('curious_coder~facebook-ads-library-scraper').call({
-                urls: [
-                    {
-                        url: "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=US&q=%22shapewear%22&search_type=keyword_exact_phrase"
-                    }
-                ],
-                searchTerms: ["shapewear"],
-                countryCode: "US",
-                adActiveStatus: "active",
-                adType: "all"
-            });
-            
-            // Get dataset items
-            const { items: apiItems } = await client.dataset(run.defaultDatasetId).listItems();
-            console.log(`Retrieved ${apiItems.length} items from the API call.`);
-            
-            // Process the API items instead
-            if (apiItems.length > 0) {
-                processItems(apiItems);
-            } else {
-                console.error('Could not retrieve any data through API either.');
+            if (items && items.length > 0) {
+                console.log('Successfully retrieved items from dataset!');
+                processItems(items);
+                return;
             }
-            
-            return;
+        } catch (datasetError) {
+            console.warn(`Error accessing dataset: ${datasetError.message}`);
         }
         
-        // Process the dataset items
-        processItems(items);
+        // If dataset approach fails, use direct API call as fallback
+        console.log('Falling back to direct API call...');
+        
+        // Initialize the ApifyClient with API token
+        const client = new ApifyClient({
+            token: 'apify_api_Cs25DCKxbaabAfdKjGDJkMqYaprUST48hBm8',
+        });
+        
+        // Run the actor to get facebook ads data
+        console.log('Running Facebook Ads Library Scraper actor...');
+        const run = await client.actor('curious_coder~facebook-ads-library-scraper').call({
+            urls: [
+                {
+                    url: `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=US&q=%22${searchQuery}%22&search_type=keyword_exact_phrase`
+                }
+            ],
+            searchTerms: [searchQuery],
+            countryCode: "US",
+            adActiveStatus: "active",
+            adType: "all"
+        });
+        
+        console.log(`Actor run completed with ID: ${run.id}`);
+        
+        // Get dataset items
+        const { items: apiItems } = await client.dataset(run.defaultDatasetId).listItems();
+        console.log(`Retrieved ${apiItems.length} items from the API call.`);
+        
+        // Process the API items
+        if (apiItems.length > 0) {
+            // Limit to count items
+            const limitedItems = apiItems.slice(0, count);
+            processItems(limitedItems);
+        } else {
+            console.error('Could not retrieve any data through API either.');
+        }
         
     } catch (error) {
         console.error('Error in Facebook Ads Actor:', error);
