@@ -80,12 +80,9 @@ const req = https.request(options, (res) => {
             const adsArray = Array.isArray(results) ? results : (results.results || []);
 
             // Collect only up to "count" items
-            const limitedAds = [];
-            for (const item of adsArray) {
-                if (limitedAds.length >= count) break;
-                limitedAds.push(item);
-            }
-            console.log(`Found ${limitedAds.length} ads in the response`);
+        // Ensure we never process more than 'count' ads
+const limitedAds = adsArray.slice(0, count);
+console.log(`Final ads processed: ${limitedAds.length}/${count}`);
 
             // Transform the data into key fields
             const transformedData = limitedAds.map(item => ({
