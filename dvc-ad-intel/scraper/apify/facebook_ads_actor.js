@@ -1,7 +1,7 @@
 // File: facebook_ads_actor.js
 // Description: This actor sends a POST request to your JSON API endpoint (facebook-ads-library-scraper)
 // using the full input JSON provided via Apify.getInput() (which includes parameters like urls, searchTerms, etc.).
-// It uses the runs endpoint with waitForFinish=true so that the actor can honor the "limit" parameter and stop early.
+// It uses the runs endpoint with waitForFinish=true so that the actor can (hopefully) honor the "limit" parameter.
 // It then limits the number of ads to a specified count, transforms each ad into an object with key fields,
 // and pushes the transformed data to the default dataset.
 
@@ -36,7 +36,7 @@ Apify.main(async () => {
     if (!input.adType) {
         input.adType = "all";
     }
-    // *** New addition ***: Include a limit parameter so the actor knows to stop after 20 ads.
+    // New addition: include a limit parameter so the actor knows to stop after 20 ads.
     if (!input.limit) {
         input.limit = count;
     }
@@ -44,7 +44,7 @@ Apify.main(async () => {
     // Convert the full input to a JSON string to be used as the POST payload.
     const postData = JSON.stringify(input);
 
-    // Make a POST request to the API runs endpoint with waitForFinish=true and the full input payload.
+    // Make a POST request to the API runs endpoint with waitForFinish=true.
     const response = await Apify.utils.requestAsBrowser({
         url: API_RUNS_URL,
         method: 'POST',
@@ -54,10 +54,11 @@ Apify.main(async () => {
         body: postData
     });
 
-    // Parse the JSON response from the API.
+    // Parse the JSON response from the API and log the raw response for debugging.
     let jsonData;
     try {
         jsonData = JSON.parse(response.body);
+        console.log("Raw response from actor:", jsonData);
     } catch (error) {
         throw new Error(`Failed to parse JSON from API response: ${error}`);
     }
@@ -73,11 +74,12 @@ Apify.main(async () => {
     // Log if we've reached the ad limit.
     if (adsArray.length >= count) {
         console.log(`Reached the ad limit of ${count}. Stopping extraction.`);
+    } else {
+        console.log(`Only ${adsArray.length} ads were returned by the actor.`);
     }
 
     // Transform each ad into an object with key fields.
     const transformedData = adsArray.map(item => ({
-        // The searchUrl here is set as the API_RUNS_URL (can be customized as needed).
         searchUrl: API_RUNS_URL,
         adUrl: item.url || API_RUNS_URL,
         pageName: item.page_name,
