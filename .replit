@@ -1,3 +1,11 @@
 language = "python"
 run = "python scraper/tools/playwright_fb_scraper.py"
 modules = ["nodejs-20", "python-3.11"]
+
+[[ports]]
+localPort = 38609
+externalPort = 80
+
+[[ports]]
+localPort = 42597
+externalPort = 3000
