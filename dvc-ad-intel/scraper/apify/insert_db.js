@@ -14,6 +14,17 @@ async function initializeDatabase() {
     await client.connect();
     console.log("🔗 Connected to PostgreSQL (NeonDB).");
 
+    // ✅ Create update timestamp function if it doesn't exist
+    await client.query(`
+        CREATE OR REPLACE FUNCTION update_timestamp()
+        RETURNS TRIGGER AS $$
+        BEGIN
+           NEW.updated_at = NOW();
+           RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
+    `);
+
     // ✅ Create `ads` table if it does not exist
     await client.query(`
         CREATE TABLE IF NOT EXISTS ads (
@@ -31,8 +42,17 @@ async function initializeDatabase() {
             ad_videos TEXT[],
             ad_text TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+    `);
+
+    // ✅ Create trigger for auto-updating timestamp
+    await client.query(`
+        DROP TRIGGER IF EXISTS update_ads_timestamp ON ads;
+        CREATE TRIGGER update_ads_timestamp
+        BEFORE UPDATE ON ads
+        FOR EACH ROW
+        EXECUTE FUNCTION update_timestamp();
     `);
 
     console.log("✅ ads table is ready.");
