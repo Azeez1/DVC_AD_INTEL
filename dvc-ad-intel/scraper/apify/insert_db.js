@@ -52,6 +52,8 @@ async function initializeDatabase() {
             entity_type TEXT,  -- ✅ Whether the ad is from a brand, person, or political entity
             gated_type TEXT,  -- ✅ Compliance status
             compliance_data JSON,  -- ✅ Store full compliance details
+            video_hd_url TEXT[],  -- ✅ Store multiple HD video URLs
+            video_sd_url TEXT[],  -- ✅ Store multiple SD video URLs
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
@@ -90,7 +92,9 @@ async function storeAdsInDatabase(items) {
             adImages: item.snapshot?.images || [],
             adVideos: item.snapshot?.videos || [],
             adText: item.snapshot?.body?.text || "",
-            startDate: item.start_date ? new Date(item.start_date * 1000) : null,
+            startDate: item.start_date
+                ? new Date(item.start_date * 1000)
+                : null,
             endDate: item.end_date ? new Date(item.end_date * 1000) : null,
             totalActiveTime: item.total_active_time || 0,
             pageLikeCount: item.snapshot?.page_like_count || 0,
@@ -101,9 +105,15 @@ async function storeAdsInDatabase(items) {
             entityType: item.entity_type || "",
             gatedType: item.gated_type || "",
             complianceData: item.regional_regulation_data || {},
-            // ✅ Extract first video HD and SD URL if available
-            videoHdUrl: item.snapshot?.videos?.[0]?.video_hd_url || "",
-            videoSdUrl: item.snapshot?.videos?.[0]?.video_sd_url || "",
+            // ✅ Extract all available video HD and SD URLs
+            videoHdUrl:
+                item.snapshot?.videos
+                    ?.map((v) => v.video_hd_url)
+                    .filter((url) => url) || [],
+            videoSdUrl:
+                item.snapshot?.videos
+                    ?.map((v) => v.video_sd_url)
+                    .filter((url) => url) || [],
         };
 
         // ✅ Generate a unique `ad_id`
@@ -187,11 +197,6 @@ async function storeAdsInDatabase(items) {
             );
         }
     }
-
-    await client.end(); // Close database connection
-    console.log("🔌 Database connection closed.");
-}
-
 
     await client.end(); // Close database connection
     console.log("🔌 Database connection closed.");
