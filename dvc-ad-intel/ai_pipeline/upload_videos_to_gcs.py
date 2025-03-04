@@ -47,6 +47,15 @@ def upload_to_gcs(local_file, gcs_filename):
 def process_ads():
     conn = psycopg2.connect(**DB_CONFIG)
     cursor = conn.cursor()
+    
+    # First, add the gcs_url column if it doesn't exist
+    try:
+        cursor.execute("ALTER TABLE ads ADD COLUMN IF NOT EXISTS gcs_url TEXT;")
+        conn.commit()
+        print("Added gcs_url column to ads table")
+    except Exception as e:
+        print(f"Error adding column: {e}")
+        conn.rollback()
 
     cursor.execute("SELECT id, ad_id, video_hd_url, video_sd_url FROM ads WHERE gcs_url IS NULL;")
     ads = cursor.fetchall()
