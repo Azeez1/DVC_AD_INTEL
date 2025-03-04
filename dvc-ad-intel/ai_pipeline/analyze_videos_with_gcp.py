@@ -1,7 +1,25 @@
 import os
 import json
 import pg8000
-from google.cloud import videointelligence
+import sys
+
+try:
+    from google.cloud import videointelligence
+    print("Successfully imported videointelligence")
+except ImportError as e:
+    print(f"Error importing videointelligence: {e}")
+    print("Attempting alternative import method...")
+    # Try installing the package again with specific options
+    import subprocess
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "--force-reinstall", "--no-cache-dir", "grpcio"])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "--force-reinstall", "google-cloud-videointelligence"])
+    # Try importing again
+    try:
+        from google.cloud import videointelligence
+        print("Successfully imported videointelligence after reinstall")
+    except ImportError as e2:
+        print(f"Failed to import after reinstall: {e2}")
+        sys.exit(1)
 
 # PostgreSQL Config
 DB_CONFIG = {
