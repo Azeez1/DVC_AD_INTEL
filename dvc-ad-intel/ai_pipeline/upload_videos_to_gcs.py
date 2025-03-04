@@ -65,8 +65,18 @@ def process_ads():
 
         # Ensure URLs are in list format and select HD first, fallback to SD
         video_urls = video_hd_urls if video_hd_urls else video_sd_urls
+        
+        # Skip ads without videos
+        if not video_urls:
+            print(f"Skipping Ad {ad_id}: No video URLs available")
+            continue
+            
         if isinstance(video_urls, list):
-            video_url = video_urls[0]  # Use the first available URL
+            if len(video_urls) > 0:
+                video_url = video_urls[0]  # Use the first available URL
+            else:
+                print(f"Skipping Ad {ad_id}: Empty video URL list")
+                continue
         else:
             video_url = video_urls
 
