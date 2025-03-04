@@ -2,3 +2,4 @@ langchain
 playwright
 python-dotenv
 google-cloud-videointelligence
+psycopg2-binary
