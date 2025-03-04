@@ -1,6 +1,6 @@
 import os
 import json
-import psycopg2
+import pg8000
 from google.cloud import videointelligence
 
 # PostgreSQL Config
@@ -73,7 +73,13 @@ def analyze_video(gcs_uri):
 
 def process_videos():
     """ Fetch videos from PostgreSQL and analyze them """
-    conn = psycopg2.connect(**DB_CONFIG)
+    conn = pg8000.connect(
+        database=DB_CONFIG['dbname'],
+        user=DB_CONFIG['user'],
+        password=DB_CONFIG['password'],
+        host=DB_CONFIG['host'],
+        port=int(DB_CONFIG['port'])
+    )
     cursor = conn.cursor()
 
     # Fetch videos that haven't been analyzed yet
