@@ -48,8 +48,18 @@ def analyze_video(gcs_uri):
     labels = [annotation.entity.description for annotation in response.annotation_results[0].segment_label_annotations]
 
     # Extract Text
-    text_annotations = response.annotation_results[0].text_annotations
-    text_list = [text.description for text in text_annotations] if text_annotations else []
+    text_annotations = response.annotation_results[0].text_annotations if response.annotation_results else []
+    text_list = []
+    if text_annotations:
+        for text in text_annotations:
+            # Check for text_segments which contain the actual text
+            if hasattr(text, 'text_segments') and text.text_segments:
+                for segment in text.text_segments:
+                    if hasattr(segment, 'text') and segment.text:
+                        text_list.append(segment.text)
+            # Fallback if the structure is different
+            elif hasattr(text, 'text') and text.text:
+                text_list.append(text.text)
 
     # Extract Scene Changes
     shot_changes = [shot.start_time_offset.seconds for shot in response.annotation_results[0].shot_annotations]
