@@ -3,6 +3,10 @@ import json
 import pg8000
 import sys
 
+# Force gRPC to use pure Python implementation instead of C extensions
+os.environ['GRPC_PYTHON_BUILD_SYSTEM_OPENSSL'] = '1'
+os.environ['GRPC_PYTHON_BUILD_WITH_CYTHON'] = '0'
+
 try:
     from google.cloud import videointelligence
     print("Successfully imported videointelligence")
@@ -11,7 +15,7 @@ except ImportError as e:
     print("Attempting alternative import method...")
     # Try installing the package again with specific options
     import subprocess
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "--force-reinstall", "--no-cache-dir", "grpcio"])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "--force-reinstall", "--no-binary=grpcio", "grpcio"])
     subprocess.check_call([sys.executable, "-m", "pip", "install", "--force-reinstall", "google-cloud-videointelligence"])
     # Try importing again
     try:
