@@ -16,19 +16,28 @@ GCS_BUCKET_NAME = "dvc-ad-intel-videos"
 GCS_CREDENTIALS = os.getenv("GCS_CREDENTIALS")  # Path to service account JSON
 
 # Load GCS credentials from environment variables
-gcs_credentials_json = os.getenv("GCS_CREDENTIALS")
+gcs_credentials_json = os.getenv("GCS_CREDENTIALS")  # Path to service account JSON
 
-# Save JSON string to a temporary file
-if gcs_credentials_json:
+# Check if credentials are valid JSON
+if not gcs_credentials_json or not gcs_credentials_json.strip():
+    raise ValueError("GCS_CREDENTIALS environment variable is empty or not set")
+
+try:
+    # Verify it's valid JSON
+    import json
+    json.loads(gcs_credentials_json)
+
+    # Save JSON string to a temporary file
     gcs_credentials_path = "/tmp/gcs_service_account.json"
     with open(gcs_credentials_path, "w") as f:
         f.write(gcs_credentials_json)
-else:
-    raise ValueError("GCS_CREDENTIALS environment variable is not set")
 
-# Initialize GCS
-storage_client = storage.Client.from_service_account_json(gcs_credentials_path)
-bucket = storage_client.bucket(GCS_BUCKET_NAME)
+    # Initialize GCS
+    storage_client = storage.Client.from_service_account_json(gcs_credentials_path)
+    bucket = storage_client.bucket(GCS_BUCKET_NAME)
+except json.JSONDecodeError:
+    raise ValueError("GCS_CREDENTIALS environment variable does not contain valid JSON")
+
 
 def upload_to_gcs(local_file, gcs_filename):
     blob = bucket.blob(gcs_filename)
