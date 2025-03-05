@@ -4,3 +4,4 @@ python-dotenv
 google-cloud-videointelligence
 psycopg2-binary
 pg8000
+openai
