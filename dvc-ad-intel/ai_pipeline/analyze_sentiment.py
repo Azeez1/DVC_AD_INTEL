@@ -81,7 +81,7 @@ def process_ads():
             a.page_like_count, a.impressions, a.reach_estimate, 
             ai.text AS insights_text, ai.labels
         FROM ads a
-        LEFT JOIN ads_insight ai ON a.ad_id = ai.ad_id
+        LEFT JOIN ad_video_insights ai ON a.ad_id = ai.ad_id
         WHERE a.sentiment IS NULL;
     """)
 
