@@ -62,7 +62,7 @@ def analyze_sentiment(text):
     # Extract sentiment label (first word of the response)
     sentiment_label = sentiment_text.split("\n")[0].strip()
 
-    return sentiment_label, sentiment_textxt
+    return sentiment_label, sentiment_text
 
 
 def process_ads():
