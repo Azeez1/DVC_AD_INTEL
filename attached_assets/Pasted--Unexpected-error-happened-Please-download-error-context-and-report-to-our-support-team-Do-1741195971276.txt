@@ -1,0 +1,66 @@
+
+Unexpected error happened 😕
+
+Please download error context and report to our support team
+
+Download Error Context
+password authentication failed for user 'neondb_owner'
+NeonDbError: password authentication failed for user 'neondb_owner'
+    at execute (https://cdn.replit.com/_next/static/chunks/3807.d58c621eaf7fb5fb.js:11:8217)
+
+Include Drizzle local storage
+
+{
+  "drizzle-version": "3.0.0",
+  "drizzle-playground": {
+    "state": {
+      "currentFile": "sql",
+      "drizzleValue": null,
+      "sqlValue": "ALTER USER neondb_owner WITH PASSWORD 'your_actual_password';\n",
+      "showRecordsAsJson": false,
+      "drizzleResult": "{\"json\":null}",
+      "sqlResult": "{\"json\":{\"status\":\"error\",\"error\":\"password authentication failed for user 'neondb_owner'\",\"records\":null,\"executionTime\":0,\"executionType\":\"UNKNOWN\"}}"
+    },
+    "version": 0
+  },
+  "drizzle-global": {
+    "state": {
+      "showCounts": false,
+      "flatSchemas": false,
+      "dataFormats": null,
+      "expandSubviews": false
+    },
+    "version": 0
+  },
+  "drizzle-db-38555989-postgresql://neondb_owner:npg_n0RGIKz1uTaX@ep-bitter-art-a6ug77x3.us-west-2.aws.neon.tech/neondb?sslmode=require": {
+    "state": {
+      "styleMode": "default",
+      "currentPage": "sql-runner",
+      "filterViews": {},
+      "isSidebarOpen": true,
+      "isShowSidebarContent": true,
+      "filtersVisible": false,
+      "sidebarWidth": 268,
+      "currentSchemaName": "public",
+      "currentTable": {
+        "id": "public.ads",
+        "type": "table",
+        "name": "ads",
+        "schema": "public",
+        "createdRecords": [],
+        "editedFields": [],
+        "filters": [],
+        "pagination": {
+          "limit": 50,
+          "offset": 0
+        },
+        "records": [],
+        "sort": null,
+        "columnSettings": {},
+        "historyId": "Qqw7_T9nOODdjuON_8cqi",
+        "executionTime": 433.70000000018626
+      }
+    },
+    "version": 1
+  }
+}
