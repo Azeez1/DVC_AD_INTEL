@@ -50,18 +50,19 @@ def analyze_sentiment(text):
     Ad Content: {text}
     """
 
-    response = openai.ChatCompletion.create(model="gpt-4",
-                                            messages=[{
-                                                "role": "system",
-                                                "content": prompt
-                                            }])
+    response = openai.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": prompt}
+        ]
+    )
 
-    sentiment_text = response["choices"][0]["message"]["content"]
+    sentiment_text = response.choices[0].message.content
 
     # Extract sentiment label (first word of the response)
     sentiment_label = sentiment_text.split("\n")[0].strip()
 
-    return sentiment_label, sentiment_text
+    return sentiment_label, sentiment_textxt
 
 
 def process_ads():
@@ -94,7 +95,11 @@ def process_ads():
         # Merge `ad_text` and `insights_text` (if both exist)
         combined_text = ""
         if insights_text:
-            combined_text += insights_text + " "
+            # Handle the case where insights_text is a list (JSON data)
+            if isinstance(insights_text, list):
+                combined_text += " ".join(insights_text) + " "
+            else:
+                combined_text += str(insights_text) + " "
         if ad_text:
             combined_text += ad_text
 
